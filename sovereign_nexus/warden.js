@@ -25,7 +25,7 @@ const AGENT_NAME    = 'The Warden';
 const ARCHETYPE     = 'Shield & Auditor';
 const JOB_CARD      = 'Security, Privacy, Integrity';
 const ALLOWED_TOOLS = ['SHA256Hash', 'HMACVerify', 'EphemeralGrant', 'ArtifactLog'];
-const GRANT_TTL_MS  = 50; // Ephemeral Grant lifetime
+const GRANT_TTL_MS  = 500; // Ephemeral Grant lifetime — long enough to survive async scheduling
 
 class Warden {
   constructor() {
@@ -60,10 +60,16 @@ class Warden {
     // 2. Re-derive and verify the HMAC signature from Phoenix
     const secret      = process.env.NEXUS_PLAN_SECRET || 'sovereign-nexus-dev-secret';
     const expectedSig = crypto.createHmac('sha256', secret).update(planJson).digest('hex');
-    const sigValid    = crypto.timingSafeEqual(
-      Buffer.from(signature, 'hex'),
-      Buffer.from(expectedSig, 'hex'),
-    );
+    const sigValid = (() => {
+      try {
+        const a = Buffer.from(signature,    'hex');
+        const b = Buffer.from(expectedSig,  'hex');
+        if (a.length !== b.length) return false;
+        return crypto.timingSafeEqual(a, b);
+      } catch (_) {
+        return false;
+      }
+    })();
 
     this._appendLog({ pulseId, planHash, sigValid, ts: Date.now() });
     akashic.publishPulseStep(pulseId, 'WardenAudit', { planHash, sigValid });

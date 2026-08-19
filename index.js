@@ -3,6 +3,7 @@ let app = express();
 let ejs = require('ejs');
 const haikus = require('./haikus.json');
 const Pulse = require('./sovereign_nexus/pulse');
+const akashic = require('./sovereign_nexus/akashic_core');
 const port = process.env.PORT || 3000;
 
 // Sovereign Nexus v4 — single shared Pulse instance for this process
@@ -56,7 +57,6 @@ app.post('/nexus/pulse', async (req, res) => {
 
 // Current agent snapshots (REST fallback)
 app.get('/nexus/agents', (req, res) => {
-  const akashic = require('./sovereign_nexus/akashic_core');
   res.json(akashic.getAllSnapshots());
 });
 

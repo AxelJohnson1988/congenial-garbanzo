@@ -88,10 +88,10 @@ class Horus {
       } else if (entry.step === 'BuilderDormant') {
         this._museState.gears    = 'idle';
         this._museState.sentinel = 'glowing';
-        // Sentinel glow fades after 3 s
+        // Sentinel glow fades after 3 s — broadcast a distinct dim event
         setTimeout(() => {
           this._museState.sentinel = 'dim';
-          this._broadcast({ type: 'pulse:step', data: { ...entry, visualCue: 'sentinel:dim' } });
+          this._broadcast({ type: 'sentinel:dim', data: { pulseId: entry.pulseId, ts: Date.now() } });
         }, 3000);
       }
 
