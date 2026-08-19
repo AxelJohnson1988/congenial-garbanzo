@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <title>Haikus for Mona</title>
     <link href="/css/main.css" rel="stylesheet" type="text/css">
@@ -10,17 +10,70 @@
   </head>
   <body>
     <h1>Haikus for Mona</h1>
+
+    <div class="audio-controls">
+      <button id="sound-toggle" aria-label="Mute haiku sound notifications" aria-pressed="false">
+        🔔 Sound on
+      </button>
+    </div>
+
+    <audio id="chime" src="/audio/chime.wav" preload="auto"></audio>
+
     <div>
       <% for(var i=0; i < haikus.length; i++) { %>
         <img
           class="mona-images"
-          src="images/<%= haikus[i].image %>" />
-        <div 
-          class="haiku-containers">
-          <p 
-            class="haikus"
-          ><%- haikus[i].text %></p>
+          src="images/<%= haikus[i].image %>"
+          alt="Illustration for haiku: <%= haikus[i].text.split('\n')[0] %>" />
+        <div class="haiku-containers">
+          <p class="haikus"><%- haikus[i].text %></p>
+
+          <p class="braille" lang="x-braille" aria-label="Haiku in Braille"><%- haikus[i].braille %></p>
+
+          <% if (haikus[i].signs && haikus[i].signs.length) { %>
+            <div class="sign-language" aria-label="Sign language illustrations">
+              <% for(var j=0; j < haikus[i].signs.length; j++) { %>
+                <img
+                  class="sign-image"
+                  src="images/<%= haikus[i].signs[j].image %>"
+                  alt="<%= haikus[i].signs[j].alt %>" />
+              <% } %>
+            </div>
+          <% } %>
         </div>
       <% } %>
     </div>
+
+    <script>
+      (function () {
+        var muted = false;
+        var chime = document.getElementById('chime');
+        var btn = document.getElementById('sound-toggle');
+
+        btn.addEventListener('click', function () {
+          muted = !muted;
+          btn.textContent = muted ? '🔕 Sound off' : '🔔 Sound on';
+          btn.setAttribute('aria-pressed', muted ? 'true' : 'false');
+          btn.setAttribute('aria-label', muted ? 'Unmute haiku sound notifications' : 'Mute haiku sound notifications');
+        });
+
+        if ('IntersectionObserver' in window) {
+          var played = new Set();
+          var observer = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+              if (entry.isIntersecting && !muted && !played.has(entry.target)) {
+                played.add(entry.target);
+                chime.currentTime = 0;
+                chime.play().catch(function () { /* autoplay policy — user gesture required */ });
+              }
+            });
+          }, { threshold: 0.5 });
+
+          document.querySelectorAll('.haiku-containers').forEach(function (el) {
+            observer.observe(el);
+          });
+        }
+      })();
+    </script>
+  </body>
 </html>
