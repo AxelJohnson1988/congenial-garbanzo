@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Sovereign Nexus v4 — Agent Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="/css/main.css" rel="stylesheet" type="text/css" />
+    <style>
+      /* ── Nexus Dashboard Styles ───────────────────────────────────────── */
+      body { background: #0d0d1a; color: #e0e0ff; font-family: 'Segoe UI', sans-serif; }
+      h1   { text-align: center; letter-spacing: .15em; color: #a78bfa; margin: 1.5rem 0 .5rem; }
+      .subtitle { text-align: center; color: #7c7caa; font-size: .875rem; margin-bottom: 1.5rem; }
+
+      /* Sentinel orb */
+      .sentinel-wrap { display: flex; justify-content: center; margin-bottom: 1.5rem; }
+      .sentinel {
+        width: 64px; height: 64px; border-radius: 50%;
+        background: radial-gradient(circle at 35% 35%, #6d28d9, #1e1b4b);
+        box-shadow: 0 0 12px 4px #4c1d95;
+        transition: box-shadow .4s ease, background .4s ease;
+      }
+      .sentinel.glowing {
+        background: radial-gradient(circle at 35% 35%, #c4b5fd, #7c3aed);
+        box-shadow: 0 0 32px 12px #7c3aed, 0 0 64px 24px #4c1d9580;
+      }
+
+      /* Gear indicators */
+      .gears-wrap { display: flex; justify-content: center; gap: .75rem; margin-bottom: 2rem; }
+      .gear {
+        font-size: 1.8rem; display: inline-block;
+        transition: transform .1s linear;
+        color: #6d28d9;
+      }
+      .gear.spinning { animation: spin 1s linear infinite; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+
+      /* Run-pulse form */
+      .pulse-form {
+        max-width: 640px; margin: 0 auto 2rem;
+        background: #12122a; border: 1px solid #2e2e5e; border-radius: 8px; padding: 1.25rem;
+      }
+      .pulse-form h2 { margin: 0 0 1rem; font-size: 1rem; color: #a78bfa; }
+      .pulse-form input, .pulse-form textarea {
+        width: 100%; box-sizing: border-box;
+        background: #0d0d1a; border: 1px solid #3730a3; border-radius: 4px;
+        color: #e0e0ff; padding: .5rem .75rem; font-size: .875rem; margin-bottom: .75rem;
+      }
+      .pulse-form button {
+        background: #6d28d9; color: #fff; border: none; border-radius: 4px;
+        padding: .5rem 1.25rem; cursor: pointer; font-size: .875rem;
+      }
+      .pulse-form button:hover { background: #7c3aed; }
+      #pulse-result {
+        margin-top: .75rem; font-size: .8rem; color: #a5f3fc;
+        white-space: pre-wrap; max-height: 160px; overflow-y: auto;
+      }
+
+      /* Agent grid */
+      .grid-wrap { max-width: 1100px; margin: 0 auto 3rem; padding: 0 1rem; }
+      .grid-wrap h2 { color: #a78bfa; font-size: 1rem; margin-bottom: .75rem; }
+      table { width: 100%; border-collapse: collapse; font-size: .8rem; }
+      th {
+        background: #1e1b4b; color: #a78bfa; text-align: left;
+        padding: .5rem .75rem; border-bottom: 1px solid #3730a3;
+      }
+      td {
+        padding: .45rem .75rem; border-bottom: 1px solid #1e1b4b;
+        vertical-align: top; word-break: break-word;
+      }
+      tr:nth-child(even) td { background: #0f0f22; }
+      .status-badge {
+        display: inline-block; padding: .15rem .5rem; border-radius: 3px;
+        font-size: .7rem; font-weight: 600; text-transform: uppercase;
+      }
+      .status-Active         { background: #065f46; color: #6ee7b7; }
+      .status-Idle           { background: #1e3a5f; color: #93c5fd; }
+      .status-Dormant        { background: #292524; color: #a8a29e; }
+      .status-Awaiting-Grant { background: #451a03; color: #fbbf24; }
+
+      /* Pulse log */
+      .log-wrap { max-width: 1100px; margin: 0 auto 3rem; padding: 0 1rem; }
+      .log-wrap h2 { color: #a78bfa; font-size: 1rem; margin-bottom: .75rem; }
+      #pulse-log {
+        background: #0d0d1a; border: 1px solid #2e2e5e; border-radius: 6px;
+        padding: .75rem; height: 220px; overflow-y: auto; font-size: .75rem;
+        font-family: 'Courier New', monospace; color: #6ee7b7;
+      }
+      .log-entry { margin-bottom: .25rem; }
+      .log-ts    { color: #7c7caa; }
+      .log-step  { color: #fbbf24; }
+    </style>
+  </head>
+  <body>
+    <h1>⚙ Sovereign Nexus v4</h1>
+    <p class="subtitle">Real-Time Agent Dashboard — Pulse Workflow</p>
+
+    <!-- Sovereign Sentinel orb -->
+    <div class="sentinel-wrap">
+      <div class="sentinel" id="sentinel" title="Sovereign Sentinel"></div>
+    </div>
+
+    <!-- Gear indicators -->
+    <div class="gears-wrap">
+      <span class="gear" id="gear1">⚙</span>
+      <span class="gear" id="gear2">⚙</span>
+      <span class="gear" id="gear3">⚙</span>
+    </div>
+
+    <!-- Run Pulse form -->
+    <div class="pulse-form">
+      <h2>▶ Run a Pulse Cycle</h2>
+      <input id="task-input" type="text" placeholder='Task description, e.g. "Analyse haiku sentiment"' />
+      <textarea id="payload-input" rows="2" placeholder='Optional JSON payload, e.g. {"key":"value"}'></textarea>
+      <button id="run-btn">Run Pulse</button>
+      <pre id="pulse-result"></pre>
+    </div>
+
+    <!-- Agent grid -->
+    <div class="grid-wrap">
+      <h2>Agent Grid</h2>
+      <table id="agent-table">
+        <thead>
+          <tr>
+            <th>Agent Name</th>
+            <th>Agent ID</th>
+            <th>Archetype</th>
+            <th>Job Card</th>
+            <th>Task-Aligned Role</th>
+            <th>Allowed Tools</th>
+            <th>Status</th>
+            <th>Last Input</th>
+            <th>Last Output</th>
+          </tr>
+        </thead>
+        <tbody id="agent-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- Pulse log -->
+    <div class="log-wrap">
+      <h2>Akashic Core — Pulse Log</h2>
+      <div id="pulse-log"></div>
+    </div>
+
+    <script>
+      // ── SSE connection ──────────────────────────────────────────────────
+      const evtSource = new EventSource('/nexus/events');
+      evtSource.onmessage = function (e) {
+        const msg = JSON.parse(e.data);
+        if (msg.type === 'snapshot' || msg.type === 'agent:state') {
+          const snapshot = msg.type === 'snapshot' ? msg.data : null;
+          if (snapshot && snapshot.agentGrid) updateGrid(snapshot.agentGrid);
+          if (msg.type === 'agent:state') updateRow(msg.data);
+          if (snapshot) updateVisuals(snapshot);
+        }
+        if (msg.type === 'pulse:step') {
+          appendLog(msg.data);
+          if (msg.data.step === 'BuilderActive')  setGears(true);
+          if (msg.data.step === 'BuilderDormant') {
+            setGears(false);
+            setSentinel('glowing');
+            setTimeout(() => setSentinel('dim'), 3000);
+          }
+        }
+      };
+
+      // ── Grid helpers ────────────────────────────────────────────────────
+      const rows = {};
+
+      function updateGrid(agents) {
+        agents.forEach(updateRow);
+      }
+
+      function updateRow(agent) {
+        const tbody = document.getElementById('agent-tbody');
+        let tr = rows[agent.agentId];
+        if (!tr) {
+          tr = document.createElement('tr');
+          tbody.appendChild(tr);
+          rows[agent.agentId] = tr;
+        }
+        const statusClass = 'status-' + (agent.status || 'Idle').replace(/\s+/g, '-');
+        tr.innerHTML = `
+          <td>${esc(agent.agentName)}</td>
+          <td><code>${esc(agent.agentId)}</code></td>
+          <td>${esc(agent.archetype)}</td>
+          <td>${esc(agent.jobCard)}</td>
+          <td>${esc(agent.taskAlignedRole)}</td>
+          <td>${esc((agent.allowedTools || []).join(', '))}</td>
+          <td><span class="status-badge ${statusClass}">${esc(agent.status)}</span></td>
+          <td><code>${esc(truncate(agent.input))}</code></td>
+          <td><code>${esc(truncate(agent.output))}</code></td>
+        `;
+      }
+
+      function updateVisuals(state) {
+        setGears(state.gears === 'spinning');
+        setSentinel(state.sentinel === 'glowing' ? 'glowing' : 'dim');
+      }
+
+      // ── Visual cues ─────────────────────────────────────────────────────
+      function setGears(spinning) {
+        ['gear1','gear2','gear3'].forEach(id => {
+          document.getElementById(id).classList.toggle('spinning', spinning);
+        });
+      }
+      function setSentinel(state) {
+        const el = document.getElementById('sentinel');
+        el.classList.toggle('glowing', state === 'glowing');
+      }
+
+      // ── Pulse log ───────────────────────────────────────────────────────
+      function appendLog(entry) {
+        const log = document.getElementById('pulse-log');
+        const div = document.createElement('div');
+        div.className = 'log-entry';
+        const ts = new Date(entry.ts).toISOString().slice(11, 23);
+        div.innerHTML = `<span class="log-ts">[${ts}]</span> <span class="log-step">${esc(entry.step)}</span> — ${esc(entry.pulseId)} ${esc(JSON.stringify(entry.data))}`;
+        log.appendChild(div);
+        log.scrollTop = log.scrollHeight;
+      }
+
+      // ── Run Pulse ───────────────────────────────────────────────────────
+      document.getElementById('run-btn').addEventListener('click', async () => {
+        const task    = document.getElementById('task-input').value.trim();
+        const rawPayload = document.getElementById('payload-input').value.trim();
+        if (!task) { alert('Please enter a task description.'); return; }
+
+        let payload = null;
+        if (rawPayload) {
+          try { payload = JSON.parse(rawPayload); }
+          catch (_) { alert('Payload is not valid JSON.'); return; }
+        }
+
+        const resultEl = document.getElementById('pulse-result');
+        resultEl.textContent = 'Running…';
+
+        try {
+          const res  = await fetch('/nexus/pulse', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ task, payload }),
+          });
+          const data = await res.json();
+          resultEl.textContent = JSON.stringify(data, null, 2);
+        } catch (err) {
+          resultEl.textContent = 'Error: ' + err.message;
+        }
+      });
+
+      // ── Utilities ───────────────────────────────────────────────────────
+      function esc(v) {
+        if (v == null) return '';
+        return String(v)
+          .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+          .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+      }
+      function truncate(v, len=80) {
+        if (v == null) return '';
+        const s = typeof v === 'string' ? v : JSON.stringify(v);
+        return s.length > len ? s.slice(0,len) + '…' : s;
+      }
+    </script>
+  </body>
+</html>

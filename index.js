@@ -2,7 +2,11 @@ let express = require('express');
 let app = express();
 let ejs = require('ejs');
 const haikus = require('./haikus.json');
+const Pulse = require('./sovereign_nexus/pulse');
 const port = process.env.PORT || 3000;
+
+// Sovereign Nexus v4 — single shared Pulse instance for this process
+const pulse = new Pulse();
 
 // Unicode Grade-1 Braille (English, uncontracted) mapping for basic ASCII
 const BRAILLE_MAP = {
@@ -27,8 +31,52 @@ const haikusWithBraille = haikus.map(h => ({
 app.use(express.static('public'))
 app.set('view engine', 'ejs');
 
+app.use(express.json());
+
 app.get('/', (req, res) => {
   res.render('index', {haikus: haikusWithBraille});
+});
+
+// ── Sovereign Nexus v4 routes ────────────────────────────────────────────────
+
+// Dashboard page
+app.get('/nexus', (req, res) => {
+  res.render('nexus');
+});
+
+// Run a Pulse cycle
+app.post('/nexus/pulse', async (req, res) => {
+  try {
+    const result = await pulse.run(req.body);
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    res.status(400).json({ ok: false, error: err.message });
+  }
+});
+
+// Current agent snapshots (REST fallback)
+app.get('/nexus/agents', (req, res) => {
+  const akashic = require('./sovereign_nexus/akashic_core');
+  res.json(akashic.getAllSnapshots());
+});
+
+// Artifact log
+app.get('/nexus/artifact-log', (req, res) => {
+  res.json(pulse.getArtifactLog());
+});
+
+// Server-Sent Events — real-time Akashic Core stream for the dashboard
+app.get('/nexus/events', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  const unsubscribe = pulse.getHorus().subscribe((event) => {
+    res.write(`data: ${JSON.stringify(event)}\n\n`);
+  });
+
+  req.on('close', unsubscribe);
 });
 
 app.listen(port);
