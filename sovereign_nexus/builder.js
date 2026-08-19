@@ -70,9 +70,8 @@ class Builder {
       // Always return to Dormant — even on error
       this._dormant = true;
       this._publish('Dormant', plan, result || { error: 'Execution failed' });
+      akashic.publishPulseStep(pulseId, 'BuilderDormant', { result: result || null });
     }
-
-    akashic.publishPulseStep(pulseId, 'BuilderDormant', { result });
     return result;
   }
 

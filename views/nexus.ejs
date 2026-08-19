@@ -153,7 +153,9 @@
           if (msg.type === 'agent:state') updateRow(msg.data);
           if (snapshot) updateVisuals(snapshot);
         }
-        if (msg.type === 'pulse:step') {
+        if (msg.type === 'sentinel:dim') {
+          setSentinel('dim');
+        }
           appendLog(msg.data);
           if (msg.data.step === 'BuilderActive')  setGears(true);
           if (msg.data.step === 'BuilderDormant') {
